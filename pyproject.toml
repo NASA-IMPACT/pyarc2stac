@@ -25,6 +25,7 @@ dependencies = [
     "python-dateutil>=2.7.0",
     "isodate>=0.6.0",
     "requests>=2.28.0",
+    "pystac>=1.10.0"
 ]
 dynamic = ["version"]
 
