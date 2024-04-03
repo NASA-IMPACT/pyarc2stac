@@ -6,18 +6,11 @@ __all__ = [
     "__version__",
     "convert_to_collection_stac",
     "fetch_timeseries",
-    "get_legend"
-    ]
+    "get_legend",
+]
 
-from pyarc2stac.version import (
-    __version__
-)
+from pyarc2stac.version import __version__
 
-from pyarc2stac.arc import (
-    convert_to_collection_stac,
-    get_legend
-)
+from pyarc2stac.arc import convert_to_collection_stac, get_legend
 
-from pyarc2stac.timeseries import (
-    fetch_timeseries
-)
+from pyarc2stac.timeseries import fetch_timeseries
