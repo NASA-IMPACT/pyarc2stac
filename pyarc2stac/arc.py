@@ -86,10 +86,10 @@ def convert_to_collection_stac(image_service_url):
 
 
 def get_legend(
-    img_url, band_ids: [List | None] = None, variable_name=None, rendering_rule=None
+    img_url, band_ids: List | None = None, variable_name=None, rendering_rule=None
 ):
-    bandIds = ",".join(band_ids) if band_ids else ""
-    params = f"bandIds={bandIds}&variable={variable_name}&renderingRule={rendering_rule}&f=pjson"
+    band_ids_list = ",".join(band_ids) if band_ids else ""
+    params = f"bandIds={band_ids_list}&variable={variable_name}&renderingRule={rendering_rule}&f=pjson"
     return get_data(f"{img_url}/legend?{params}")
 
 
@@ -104,7 +104,7 @@ def get_cube_info(img_url):
     multi_dim = get_data(
         f"{img_url}/multiDimensionalInfo?returnDimensionValues=always&f=pjson"
     )
-    variables = multi_dim["multidimensionalInfo"]["variables"]
+    variables = multi_dim.get("multidimensionalInfo", {}).get("variables", [])
     cube_variables = {}
     cube_dimensions = {}
 
