@@ -2,6 +2,7 @@ import isodate
 from pystac import SpatialExtent, TemporalExtent, Collection, Extent, Summaries
 from pystac.extensions.datacube import DatacubeExtension, Variable, Dimension
 from .utils import get_data, convert_to_datetime
+from typing import List
 
 
 def get_periodicity(cube_dimensions):
@@ -54,6 +55,12 @@ def convert_to_collection_stac(image_service_url):
     collection.extra_fields["dashboard:time_density"] = "year"  # Todo implement a function to return this properly
 
     return collection
+
+
+def get_legend(img_url, band_ids: [List | None] = None, variable_name=None, rendering_rule=None):
+    bandIds = ','.join(band_ids) if band_ids else ''
+    params = f'bandIds={bandIds}&variable={variable_name}&renderingRule={rendering_rule}&f=pjson'
+    return get_data(f"{img_url}/legend?{params}")
 
 
 def get_datetime_summaries(cube_dimensions):
