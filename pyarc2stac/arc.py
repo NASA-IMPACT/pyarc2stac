@@ -81,7 +81,7 @@ def get_cube_info(img_url):
     for index, variable in enumerate(variables):
         cube_variables[variable["name"]] = Variable({
             "type": "data",
-            "attrs": variable["attributes"],
+            "attrs": variable.get("attributes", {}),
             "statistics": variable["statistics"],
             "histograms": variable["histograms"],
             "unit": variable["unit"],
