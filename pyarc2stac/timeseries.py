@@ -3,7 +3,7 @@ from datetime import datetime
 
 import requests
 
-from .utils import convert_to_iso_time
+from .utils import convert_to_datetime
 
 
 def _convert_to_esri_polygon_geometry(aoi):
@@ -52,7 +52,8 @@ def fetch_timeseries(image_service_url, variable_name, datetime_range, aoi):
     for sample in samples:
         attributes = sample["attributes"]
         date_time = attributes["StdTime"]
-        date_time_iso = convert_to_iso_time([date_time])[0]
+        date_time_format = convert_to_datetime([date_time])[0]
+        date_time_iso = f"{date_time_format.isoformat()}Z"
         counter[date_time_iso] = counter.get(date_time_iso, 0) + 1
         lookup[date_time_iso] = lookup.get(date_time_iso, 0) + (
             (float(sample["value"]) - lookup.get(date_time_iso, 0))
