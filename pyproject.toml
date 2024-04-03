@@ -1,0 +1,121 @@
+[project]
+name = "pyarc2stac"
+description = "Python library for converting arc to STAC"
+readme = "README.md"
+authors = [
+    { name = "Abdelhak Marouane", email = "abdelhak.marouane@uah.edu" },
+    { name = "Slesa Adhiri", email = "slesa@gmail.com" },
+]
+maintainers = [{ name = "Abdelhak Marouane", email = "abdelhak.marouane@uah.edu" }]
+keywords = ["arc2stac", "pystac", "imagery", "raster", "catalog", "STAC", "ArcGis"]
+license = { text = "Apache-2.0" }
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "python-dateutil>=2.7.0",
+    "isodate>=0.6.0",
+    "requests>=2.28.0",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+bench = ["asv~=0.6.0", "packaging~=24.0", "virtualenv~=20.22"]
+docs = [
+    "Sphinx~=6.2",
+    "boto3~=1.28",
+    "ipython~=8.12",
+    "jinja2<4.0",
+    "jupyter~=1.0",
+    "nbsphinx~=0.9.0",
+    "pydata-sphinx-theme~=0.13",
+    "rasterio~=1.3",
+    "shapely~=2.0",
+    "sphinx-autobuild==2024.2.4",
+    "sphinx-design~=0.5.0",
+    "sphinxcontrib-fulltoc~=1.2",
+]
+jinja2 = ["jinja2<4.0"]
+orjson = ["orjson>=3.5"]
+test = [
+    "black~=24.0",
+    "codespell~=2.2",
+    "coverage~=7.2",
+    "doc8~=1.1",
+    "html5lib~=1.1",
+    "jinja2<4.0",
+    "jsonschema~=4.18",
+    "mypy~=1.2",
+    "orjson~=3.8",
+    "pre-commit~=3.2",
+    "pytest-cov~=5.0",
+    "pytest-mock~=3.10",
+    "pytest-recording~=0.13.0",
+    "pytest~=8.0",
+    "requests-mock~=1.11",
+    "ruff==0.3.4",
+    "types-html5lib~=1.1",
+    "types-orjson~=3.6",
+    "types-jsonschema~=4.18",
+    "types-python-dateutil~=2.8",
+    "types-urllib3~=1.26",
+]
+dev = [
+"ipython"
+]
+urllib3 = ["urllib3>=1.26"]
+validation = ["jsonschema~=4.18"]
+
+[project.urls]
+Homepage = "https://github.com/NASA-IMPACT/pyarc2stac"
+Documentation = "https://pyarc2stac.readthedocs.io"
+Repository = "https://github.com/NASA-IMPACT/pyarc2stac.git"
+Changelog = "https://github.com/NASA-IMPACT/pyarc2stac/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+include = ["pyarc2stac*"]
+exclude = ["tests*", "benchmarks*"]
+
+[tool.setuptools.dynamic]
+version = { attr = "pyarc2stac.version.__version__" }
+
+[tool.mypy]
+show_error_codes = true
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["jinja2"]
+ignore_missing_imports = true
+
+[tool.coverage.run]
+branch = true
+source = ["pyarc2stac"]
+
+
+[tool.coverage.report]
+fail_under = 90
+exclude_lines = ["if TYPE_CHECKING:"]
+
+[tool.doc8]
+ignore-path = ["docs/_build", "docs/tutorials"]
+max-line-length = 88
+
+[tool.ruff]
+line-length = 88
+select = ["E", "F", "I"]
+
+[tool.pytest.ini_options]
+filterwarnings = ["error"]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
