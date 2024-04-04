@@ -3,7 +3,7 @@ from pystac import SpatialExtent, TemporalExtent, Collection, Extent, Summaries,
 from pystac.extensions.datacube import DatacubeExtension, Variable, Dimension
 from .utils import get_data, convert_to_datetime
 from typing import List
-
+import re
 
 def get_periodicity(cube_dimensions):
     # TODO: the dashboard uses `dashboard:is_periodic` as a means to create the unit timestamp
@@ -23,8 +23,10 @@ def convert_to_collection_stac(image_service_url):
     json_data = get_data(f"{image_service_url}?f=pjson")
     datacube_variables, datacube_dimensions = get_cube_info(image_service_url)
     # use pystac to create a STAC collection
-    collection_id = json_data["name"]
-    collection_title = json_data["name"]
+    pattern = r'services/(?P<collection_id>.*?)/(Image|Map)Server'
+    collection_name = re.search(pattern, image_service_url).group('collection_id')
+    collection_id = json_data.get("name", collection_name)
+    collection_title = json_data.get("name", collection_name)
     collection_description = json_data["serviceDescription"]
     collection_bbox = [
         json_data["extent"]["xmin"],
@@ -50,6 +52,7 @@ def convert_to_collection_stac(image_service_url):
         summaries=collection_summaries,
     )
 
+
     # Add links to the collection
     links = [
         {
@@ -57,7 +60,7 @@ def convert_to_collection_stac(image_service_url):
             "rel": "wms",
             "type": "image/png",
             "title": "Visualized through a WMS",
-            "wms:layers": datacube_variables.keys(),
+            "wms:layers": [*datacube_variables],
             "wms:styles": ["default"],
         }
     ]
