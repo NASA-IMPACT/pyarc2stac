@@ -30,9 +30,10 @@ def transform_projection(wkid_source_proj, x, y):
     if wkid_source_proj == wkid_destination_proj:
         return x, y
 
-    transformer = Transformer.from_crs(f"EPSG:{wkid_source_proj}", f"EPSG:{wkid_destination_proj}")
+    transformer = Transformer.from_crs(f"EPSG:{wkid_source_proj}", f"EPSG:{wkid_destination_proj}",always_xy=True)
 
     # Perform the transformation
-    lat, lon = transformer.transform(x, y)
+    lon, lat = transformer.transform(x, y)
 
-    return [lat, lon]
+    return [lon, lat]
+
