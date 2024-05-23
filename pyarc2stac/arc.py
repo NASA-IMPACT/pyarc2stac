@@ -35,9 +35,12 @@ def convert_map_server_to_collection_stac(server_url, collection_name):
     spatial_ref = json_data["spatialReference"]["latestWkid"]
     xmin, ymin= json_data["fullExtent"]["xmin"], json_data["fullExtent"]["ymin"]
     xmax, ymax = json_data["fullExtent"]["xmax"], json_data["fullExtent"]["ymax"]
-    collection_bbox = transform_projection(spatial_ref,xmin, ymin) + transform_projection(spatial_ref,xmax, ymax )
+    collection_bbox = transform_projection(spatial_ref, xmin, ymin) + transform_projection(spatial_ref,xmax, ymax )
     spatial_extent = SpatialExtent(bboxes=collection_bbox)
-    temporal_extent = TemporalExtent(intervals=[None, datetime.datetime.utcnow()])
+    collection_interval = [None, datetime.datetime.utcnow()]
+    if json_data.get("timeInfo"):
+        collection_interval = convert_to_datetime(json_data["timeInfo"]["timeExtent"])
+    temporal_extent = TemporalExtent(intervals=collection_interval)
     collection_extent = Extent(spatial=spatial_extent, temporal=temporal_extent)
     collection = Collection(
         id=collection_id,
