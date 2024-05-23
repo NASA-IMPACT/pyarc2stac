@@ -1,3 +1,5 @@
+import datetime
+
 import isodate
 from pystac import SpatialExtent, TemporalExtent, Collection, Extent, Summaries, Link
 from pystac.extensions.datacube import DatacubeExtension, Variable, Dimension
@@ -35,7 +37,7 @@ def convert_map_server_to_collection_stac(server_url, collection_name):
     xmax, ymax = json_data["fullExtent"]["xmax"], json_data["fullExtent"]["ymax"]
     collection_bbox = transform_projection(spatial_ref,xmin, ymin) + transform_projection(spatial_ref,xmax, ymax )
     spatial_extent = SpatialExtent(bboxes=collection_bbox)
-    temporal_extent = TemporalExtent(intervals=[None, None])
+    temporal_extent = TemporalExtent(intervals=[None, datetime.datetime.utcnow()])
     collection_extent = Extent(spatial=spatial_extent, temporal=temporal_extent)
     collection = Collection(
         id=collection_id,
