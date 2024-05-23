@@ -49,7 +49,7 @@ def convert_map_server_to_collection_stac(server_url, collection_name):
     layers_names = get_map_server_layers_names(map_server_url=server_url)
     links = [
         {
-            "href": f"{server_url}/WMSServer",
+            "href": f"{server_url.replace('/rest', '')}/WMSServer",
             "rel": "wms",
             "type": "image/png",
             "title": "Visualized through a WMS",
@@ -117,7 +117,7 @@ def convert_image_server_to_collection_stac(server_url, collection_name):
     # Add links to the collection
     links = [
         {
-            "href": f"{server_url}/WMSServer",
+            "href": f"{server_url.replace('/rest', '')}/WMSServer",
             "rel": "wms",
             "type": "image/png",
             "title": "Visualized through a WMS",
