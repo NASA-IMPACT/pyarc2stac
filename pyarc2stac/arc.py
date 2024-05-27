@@ -1,11 +1,12 @@
 import datetime
-
+import requests
 import isodate
 from pystac import SpatialExtent, TemporalExtent, Collection, Extent, Summaries, Link
 from pystac.extensions.datacube import DatacubeExtension, Variable, Dimension
 from .utils import get_data, convert_to_datetime, transform_projection
 from typing import List
 import re
+import xml.etree.ElementTree as ET
 
 
 def get_periodicity(cube_dimensions=None):
@@ -21,21 +22,47 @@ def get_periodicity(cube_dimensions=None):
     #             dimension["intervalUnit"].lower()[:-1],
     #         )
 
-def get_map_server_layers_names(map_server_url):
+
+def get_map_server_layers_rest(map_server_url):
     multi_dim = get_data(
         f"{map_server_url}/multiDimensionalInfo?returnDimensionValues=always&f=pjson"
     )
     return [layer_name['name'] for layer_name in multi_dim['layers']]
 
+
+def get_map_server_layers_wms(map_server_url):
+    service_url = map_server_url.replace("/rest", "")
+    url = f"{service_url}/WMSServer?request=GetCapabilities&service=WMS"
+    response = requests.get(url)
+    response.raise_for_status()
+    xml_content = response.content
+
+    # Parse XML content
+    root = ET.fromstring(xml_content)
+
+    # Find all Layer elements
+    layers = []
+    for layer in root.findall('.//{http://www.opengis.net/wms}Layer'):
+        name = layer.find('{http://www.opengis.net/wms}Name')
+        title = layer.find('{http://www.opengis.net/wms}Title')
+
+        if name is not None and title is not None:
+            layers.append(title.text)
+
+    return layers
+
+
 def convert_map_server_to_collection_stac(server_url, collection_name):
     json_data = get_data(f"{server_url}?f=pjson")
+    if json_data.get("error"):
+        raise Exception(json_data)
     collection_id = json_data.get("name", collection_name)
     collection_title = json_data.get("name", collection_name)
     collection_description = json_data.get("serviceDescription", collection_title)
     spatial_ref = json_data["spatialReference"]["latestWkid"]
-    xmin, ymin= json_data["fullExtent"]["xmin"], json_data["fullExtent"]["ymin"]
+    xmin, ymin = json_data["fullExtent"]["xmin"], json_data["fullExtent"]["ymin"]
     xmax, ymax = json_data["fullExtent"]["xmax"], json_data["fullExtent"]["ymax"]
-    collection_bbox = transform_projection(spatial_ref, xmin, ymin) + transform_projection(spatial_ref,xmax, ymax )
+    collection_bbox = transform_projection(spatial_ref, xmin, ymin) + transform_projection(spatial_ref, xmax, ymax)
     spatial_extent = SpatialExtent(bboxes=collection_bbox)
     collection_interval = [None, datetime.datetime.utcnow()]
     if json_data.get("timeInfo"):
@@ -49,7 +76,12 @@ def convert_map_server_to_collection_stac(server_url, collection_name):
         extent=collection_extent,
         license=""
     )
-    layers_names = get_map_server_layers_names(map_server_url=server_url)
+    try:
+        # User WMS
+        layers_names = get_map_server_layers_wms(map_server_url=server_url)
+    except:
+        # If WMS is not active
+        layers_names = get_map_server_layers_rest(map_server_url=server_url)
     links = [
         {
             "href": f"{server_url.replace('/rest', '')}/WMSServer",
@@ -82,11 +114,8 @@ def convert_map_server_to_collection_stac(server_url, collection_name):
     return collection
 
 
-
-
 def convert_image_server_to_collection_stac(server_url, collection_name):
     json_data = get_data(f"{server_url}?f=pjson")
-
 
     collection_id = json_data.get("name", collection_name)
     collection_title = json_data.get("name", collection_name)
@@ -155,7 +184,6 @@ def convert_image_server_to_collection_stac(server_url, collection_name):
 def convert_to_collection_stac(server_url):
     switch_function = {"Image": convert_image_server_to_collection_stac,
                        "Map": convert_map_server_to_collection_stac}
-
 
     # use pystac to create a STAC collection
     pattern = r'services/(?P<collection_id>.*?)/(?P<server_type>(Image|Map))Server'
