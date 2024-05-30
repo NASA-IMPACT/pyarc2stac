@@ -207,6 +207,10 @@ def get_datetime_summaries(cube_dimensions):
         if dim_dict["type"] == "temporal":
             return dim_dict["values"]
 
+def get_cube_mapserver_info(mapserver_url, layer_id):
+    url = f"{mapserver_url}/{layer_id}?f=pjson"
+    cube_data = get_data(url)
+    pass
 
 def get_cube_info(img_url):
     multi_dim = get_data(
