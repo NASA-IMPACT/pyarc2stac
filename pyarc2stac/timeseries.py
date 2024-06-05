@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 
 import requests
 
@@ -14,16 +13,14 @@ def _convert_to_esri_polygon_geometry(aoi):
     return aoi_geometry
 
 
-def convert_to_milliseconds(date_time_str):
+def convert_to_milliseconds(dt):
     """Converts a date-time string in 'YYYY-MM-DD HH:MM:SS' format to milliseconds since epoch."""
-    dt = datetime.strptime(date_time_str, "%Y-%m-%dT%H:%M:%SZ")
     milliseconds_since_epoch = int(dt.timestamp() * 1000)
     return milliseconds_since_epoch
 
 
 # Function to fetch time series data
 def fetch_timeseries(image_service_url, variable_name, datetime_range, aoi):
-    datetime_range = datetime_range.split(",")
     # Construct the request parameters
     params = {
         "geometry": json.dumps(_convert_to_esri_polygon_geometry(aoi)).replace(" ", ""),
