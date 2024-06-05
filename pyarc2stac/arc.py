@@ -27,7 +27,7 @@ def get_map_server_layers_rest(map_server_url):
     multi_dim = get_data(
         f"{map_server_url}/multiDimensionalInfo?returnDimensionValues=always&f=pjson"
     )
-    return [layer_name['name'] for layer_name in multi_dim['layers']]
+    return [layer_name["name"] for layer_name in multi_dim["layers"]]
 
 
 def get_map_server_layers_wms(map_server_url):
@@ -42,9 +42,9 @@ def get_map_server_layers_wms(map_server_url):
 
     # Find all Layer elements
     layers = []
-    for layer in root.findall('.//{http://www.opengis.net/wms}Layer'):
-        name = layer.find('{http://www.opengis.net/wms}Name')
-        title = layer.find('{http://www.opengis.net/wms}Title')
+    for layer in root.findall(".//{http://www.opengis.net/wms}Layer"):
+        name = layer.find("{http://www.opengis.net/wms}Name")
+        title = layer.find("{http://www.opengis.net/wms}Title")
 
         if name is not None and title is not None:
             layers.append(title.text)
@@ -62,7 +62,9 @@ def convert_map_server_to_collection_stac(server_url, collection_name):
     spatial_ref = json_data["spatialReference"]["latestWkid"]
     xmin, ymin = json_data["fullExtent"]["xmin"], json_data["fullExtent"]["ymin"]
     xmax, ymax = json_data["fullExtent"]["xmax"], json_data["fullExtent"]["ymax"]
-    collection_bbox = transform_projection(spatial_ref, xmin, ymin) + transform_projection(spatial_ref, xmax, ymax)
+    collection_bbox = transform_projection(
+        spatial_ref, xmin, ymin
+    ) + transform_projection(spatial_ref, xmax, ymax)
     spatial_extent = SpatialExtent(bboxes=collection_bbox)
     collection_interval = [None, datetime.datetime.utcnow()]
     if json_data.get("timeInfo"):
@@ -74,7 +76,7 @@ def convert_map_server_to_collection_stac(server_url, collection_name):
         title=collection_title,
         description=collection_description,
         extent=collection_extent,
-        license=""
+        license="",
     )
     try:
         # User WMS
@@ -172,7 +174,10 @@ def convert_image_server_to_collection_stac(server_url, collection_name):
     # Add Datacube extension to the collection
     datacube_ext = DatacubeExtension.ext(collection, add_if_missing=True)
     # Set eDimensions and Variables to Datacube extension
-    datacube_ext.variables, datacube_ext.dimensions = datacube_variables, datacube_dimensions
+    datacube_ext.variables, datacube_ext.dimensions = (
+        datacube_variables,
+        datacube_dimensions,
+    )
     # Add custom extensions
     (
         collection.extra_fields["dashboard:is_periodic"],
@@ -182,19 +187,23 @@ def convert_image_server_to_collection_stac(server_url, collection_name):
 
 
 def convert_to_collection_stac(server_url):
-    switch_function = {"Image": convert_image_server_to_collection_stac,
-                       "Map": convert_map_server_to_collection_stac}
+    switch_function = {
+        "Image": convert_image_server_to_collection_stac,
+        "Map": convert_map_server_to_collection_stac,
+    }
 
     # use pystac to create a STAC collection
-    pattern = r'services/(?P<collection_id>.*?)/(?P<server_type>(Image|Map))Server'
+    pattern = r"services/(?P<collection_id>.*?)/(?P<server_type>(Image|Map))Server"
     re_search = re.search(pattern, server_url)
-    collection_name = re_search.group('collection_id')
-    server_type = re_search.group('server_type')
-    return switch_function[server_type](server_url=server_url, collection_name=collection_name)
+    collection_name = re_search.group("collection_id")
+    server_type = re_search.group("server_type")
+    return switch_function[server_type](
+        server_url=server_url, collection_name=collection_name
+    )
 
 
 def get_legend(
-        img_url, band_ids: List | None = None, variable_name=None, rendering_rule=None
+    img_url, band_ids: List | None = None, variable_name=None, rendering_rule=None
 ):
     band_ids_list = ",".join(band_ids) if band_ids else ""
     params = f"bandIds={band_ids_list}&variable={variable_name}&renderingRule={rendering_rule}&f=pjson"
@@ -207,10 +216,12 @@ def get_datetime_summaries(cube_dimensions):
         if dim_dict["type"] == "temporal":
             return dim_dict["values"]
 
+
 def get_cube_mapserver_info(mapserver_url, layer_id):
     url = f"{mapserver_url}/{layer_id}?f=pjson"
     cube_data = get_data(url)
     pass
+
 
 def get_cube_info(img_url):
     multi_dim = get_data(
