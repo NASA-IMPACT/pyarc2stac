@@ -92,7 +92,7 @@ def convert_map_server_to_collection_stac(server_url, collection_name):
             "title": "Visualized through a WMS",
             "wms:layers": [*layers_names],
             "wms:styles": ["default"],
-        }
+        },
     ]
     for link_data in links:
         link = Link(
@@ -157,7 +157,7 @@ def convert_image_server_to_collection_stac(server_url, collection_name):
             "title": "Visualized through a WMS",
             "wms:layers": [*datacube_variables],
             "wms:styles": ["default"],
-        }
+        },
     ]
     for link_data in links:
         link = Link(
@@ -197,9 +197,18 @@ def convert_to_collection_stac(server_url):
     re_search = re.search(pattern, server_url)
     collection_name = re_search.group("collection_id")
     server_type = re_search.group("server_type")
-    return switch_function[server_type](
+    collection = switch_function[server_type](
         server_url=server_url, collection_name=collection_name
     )
+    # add arcgis server url to the collection links
+    server_link = Link(
+        target=server_url,
+        rel="via",
+        media_type="text/html",
+        title="Parent ArcGIS server url",
+    )
+    collection.add_link(server_link)
+    return collection
 
 
 def get_legend(
