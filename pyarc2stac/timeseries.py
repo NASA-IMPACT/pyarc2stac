@@ -1,6 +1,9 @@
 import json
-
 import requests
+
+from collections import defaultdict
+
+import numpy as np
 
 from .utils import convert_to_datetime
 
@@ -45,25 +48,32 @@ def fetch_timeseries(image_service_url, variable_name, datetime_range, aoi):
     # Extract the time series of data from the response
     data = response.json()
     samples = data["samples"]
-    lookup = dict()
-    counter = dict()
-    for sample in samples:
-        attributes = sample["attributes"]
-        date_time = attributes["StdTime"]
-        date_time_format = convert_to_datetime([date_time])[0]
+    # Extract values and StdTime
+    extracted_data = defaultdict(list)
+
+    for item in samples:
+        value = float(item["value"])
+        std_time = item["attributes"]["StdTime"]
+        extracted_data[std_time].append(value)
+
+    # Calculate statistics
+    timeseries = {}
+
+    for std_time, values in extracted_data.items():
+        values_array = np.array(values)
+        stats = {
+            "mean": np.mean(values_array),
+            "min": np.min(values_array),
+            "max": np.max(values_array),
+            "std": np.std(values_array),
+            "median": np.median(values_array),
+            "sum": np.sum(values_array),
+        }
+        date_time_format = convert_to_datetime([std_time])[0]
         date_time_iso = f"{date_time_format.isoformat()}Z"
-        counter[date_time_iso] = counter.get(date_time_iso, 0) + 1
-        lookup[date_time_iso] = lookup.get(date_time_iso, 0) + (
-            (float(sample["value"]) - lookup.get(date_time_iso, 0))
-            / counter[date_time_iso]
-        )
+        timeseries[date_time_iso] = stats
 
-    time_series = list()
-
-    for key, val in lookup.items():
-        time_series.append({"date": key, "mean": val})
-
-    return time_series
+    return timeseries
     # else:
     #     # raise exception
     #     raise Exception("Failed getSamples", response)
