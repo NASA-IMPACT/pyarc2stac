@@ -6,8 +6,9 @@ from .utils import convert_to_datetime
 
 
 def _convert_to_esri_polygon_geometry(aoi):
+    # aoi is a FeatureCollection from pydantic_geoson
     aoi_geometry = {
-        "rings": aoi["features"][0]["geometry"]["coordinates"],
+        "rings": aoi.features[0].geometry.coordinates,
         "spatialReference": {"wkid": 4326},
     }
     return aoi_geometry
