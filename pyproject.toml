@@ -24,8 +24,9 @@ requires-python = ">=3.9"
 dependencies = [
     "isodate>=0.6.0",
     "numpy>=1.26.4",
-    "python-dateutil>=2.7.0",
+    "pyproj",
     "pystac>=1.10.0",
+    "python-dateutil>=2.7.0",
     "requests>=2.28.0"
 ]
 dynamic = ["version"]
