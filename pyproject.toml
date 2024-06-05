@@ -4,7 +4,7 @@ description = "Python library for converting arc to STAC"
 readme = "README.md"
 authors = [
     { name = "Abdelhak Marouane", email = "abdelhak.marouane@uah.edu" },
-    { name = "Slesa Adhiri", email = "slesa@gmail.com" },
+    { name = "Slesa Adhikari", email = "slesaad@gmail.com" },
 ]
 maintainers = [{ name = "Abdelhak Marouane", email = "abdelhak.marouane@uah.edu" }]
 keywords = ["arc2stac", "pystac", "imagery", "raster", "catalog", "STAC", "ArcGis"]
@@ -22,10 +22,11 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "python-dateutil>=2.7.0",
     "isodate>=0.6.0",
+    "numpy>=1.26.4"
+    "python-dateutil>=2.7.0",
+    "pystac>=1.10.0",
     "requests>=2.28.0",
-    "pystac>=1.10.0"
 ]
 dynamic = ["version"]
 
