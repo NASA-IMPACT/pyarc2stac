@@ -126,7 +126,7 @@ def convert_map_server_to_collection_stac(server_url, collection_id, collection_
     json_data = get_data(f"{server_url}?f=pjson")
     if json_data.get("error"):
         raise Exception(json_data)
-    collection_description = json_data.get("description", collection_title)
+    collection_description = json_data.get("description") or collection_title
     spatial_ref = json_data["spatialReference"]["latestWkid"]
     xmin, ymin = json_data["fullExtent"]["xmin"], json_data["fullExtent"]["ymin"]
     xmax, ymax = json_data["fullExtent"]["xmax"], json_data["fullExtent"]["ymax"]
@@ -203,7 +203,7 @@ def convert_map_server_to_collection_stac(server_url, collection_id, collection_
 
 def convert_image_server_to_collection_stac(server_url, collection_id, collection_title):
     json_data = get_data(f"{server_url}?f=pjson")
-    collection_description = json_data.get("description", collection_title)
+    collection_description = json_data.get("description") or collection_title
     datacube_variables, datacube_dimensions = get_cube_info(server_url)
 
     collection_bbox = [
