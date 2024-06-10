@@ -137,7 +137,7 @@ def convert_map_server_to_collection_stac(server_url, collection_id, collection_
     spatial_extent = SpatialExtent(bboxes=collection_bbox)
     collection_interval = [None, None]
     collection_summaries_dates = []
-    time_periods = "years"
+    time_periods = "year"
     if json_data.get("timeInfo"):
         collection_interval = convert_to_datetime(json_data["timeInfo"]["timeExtent"])
         time_interval_value = json_data["timeInfo"]["defaultTimeInterval"]
