@@ -10,7 +10,7 @@ import re
 import xml.etree.ElementTree as ET
 
 
-def get_periodicity(cube_dimensions=None, time_periods="years"):
+def get_periodicity(cube_dimensions=None, time_periods="year"):
     # TODO: the dashboard uses `dashboard:is_periodic` as a means to create the unit timestamp
     # the ImageServer has these unit timestamps already
     # so we might just set it to False always
@@ -93,11 +93,10 @@ def get_mapserver_datetime_summary(collection_interval, time_interval_value, tim
     # Generate the list of datetime objects
     datetime_list = []
     current_date = start_date
-    while current_date < end_date:
+    while current_date <= end_date:
         formatted_date = current_date.strftime("%Y-%m-%dT00:00:00Z")
         datetime_list.append(formatted_date)
         current_date += delta
-    datetime_list.append(end_date.strftime("%Y-%m-%dT00:00:00Z"))
     return time_periods.rstrip('s'), datetime_list
 
 
