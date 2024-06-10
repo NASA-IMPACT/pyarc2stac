@@ -132,20 +132,25 @@ def convert_map_server_to_collection_stac(server_url, collection_id, collection_
     spatial_ref = json_data["spatialReference"]["latestWkid"]
     xmin, ymin = json_data["fullExtent"]["xmin"], json_data["fullExtent"]["ymin"]
     xmax, ymax = json_data["fullExtent"]["xmax"], json_data["fullExtent"]["ymax"]
-    time_interval_value = json_data["timeInfo"]["defaultTimeInterval"]
-    time_interval_units = json_data["timeInfo"]["defaultTimeIntervalUnits"]
+
     collection_bbox = transform_projection(
         spatial_ref, xmin, ymin
     ) + transform_projection(spatial_ref, xmax, ymax)
     spatial_extent = SpatialExtent(bboxes=collection_bbox)
     collection_interval = [None, datetime.datetime.utcnow()]
+    collection_summaries_dates = [datetime.datetime.utcnow().strftime("%Y-%m-%dT00:00:00Z")]
+    time_periods = "years"
     if json_data.get("timeInfo"):
         collection_interval = convert_to_datetime(json_data["timeInfo"]["timeExtent"])
+        time_interval_value = json_data["timeInfo"]["defaultTimeInterval"]
+        time_interval_units = json_data["timeInfo"]["defaultTimeIntervalUnits"]
+        time_periods, collection_summaries_dates = get_mapserver_datetime_summary(
+            collection_interval=collection_interval,
+            time_interval_value=time_interval_value,
+            time_interval_units=time_interval_units)
     temporal_extent = TemporalExtent(intervals=collection_interval)
     collection_extent = Extent(spatial=spatial_extent, temporal=temporal_extent)
-    time_periods, collection_summaries_dates = get_mapserver_datetime_summary(collection_interval=collection_interval,
-                                                                              time_interval_value=time_interval_value,
-                                                                              time_interval_units=time_interval_units)
+
 
     collection = Collection(
         id=collection_id,
