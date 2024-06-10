@@ -98,7 +98,7 @@ def get_mapserver_datetime_summary(collection_interval, time_interval_value, tim
         datetime_list.append(formatted_date)
         current_date += delta
     datetime_list.append(end_date.strftime("%Y-%m-%dT00:00:00Z"))
-    return time_periods, datetime_list
+    return time_periods.rstrip('s'), datetime_list
 
 
 def get_time_interval(service_url):
@@ -137,8 +137,8 @@ def convert_map_server_to_collection_stac(server_url, collection_id, collection_
         spatial_ref, xmin, ymin
     ) + transform_projection(spatial_ref, xmax, ymax)
     spatial_extent = SpatialExtent(bboxes=collection_bbox)
-    collection_interval = [None, datetime.datetime.utcnow()]
-    collection_summaries_dates = [datetime.datetime.utcnow().strftime("%Y-%m-%dT00:00:00Z")]
+    collection_interval = [None, None]
+    collection_summaries_dates = []
     time_periods = "years"
     if json_data.get("timeInfo"):
         collection_interval = convert_to_datetime(json_data["timeInfo"]["timeExtent"])
@@ -148,9 +148,10 @@ def convert_map_server_to_collection_stac(server_url, collection_id, collection_
             collection_interval=collection_interval,
             time_interval_value=time_interval_value,
             time_interval_units=time_interval_units)
+
+
     temporal_extent = TemporalExtent(intervals=collection_interval)
     collection_extent = Extent(spatial=spatial_extent, temporal=temporal_extent)
-
 
     collection = Collection(
         id=collection_id,
@@ -197,6 +198,8 @@ def convert_map_server_to_collection_stac(server_url, collection_id, collection_
         collection.extra_fields["dashboard:time_density"],
     ) = get_periodicity(time_periods=time_periods)
 
+    if not collection_summaries_dates:
+        collection.extra_fields["dashboard:is_timeless"] = True
     return collection
 
 
