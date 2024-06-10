@@ -156,7 +156,7 @@ def convert_map_server_to_collection_stac(server_url, collection_id, collection_
         title=collection_title,
         description=collection_description,
         extent=collection_extent,
-        license="",
+        license=json_data.get('license', "not-applicable"),
         summaries=Summaries(
             {"datetime": collection_summaries_dates}, maxcount=len(collection_summaries_dates) + 1
         )
@@ -226,7 +226,7 @@ def convert_image_server_to_collection_stac(server_url, collection_id, collectio
         title=collection_title,
         description=collection_description,
         extent=collection_extent,
-        license="",
+        license=json_data.get('license', "not-applicable"),
         summaries=collection_summaries,
     )
 
