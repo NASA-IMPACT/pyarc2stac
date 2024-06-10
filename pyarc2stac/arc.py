@@ -1,6 +1,7 @@
 import datetime
 import requests
 import isodate
+from dateutil.relativedelta import relativedelta
 from pystac import SpatialExtent, TemporalExtent, Collection, Extent, Summaries, Link
 from pystac.extensions.datacube import DatacubeExtension, Variable, Dimension
 from .utils import get_data, convert_to_datetime, transform_projection
@@ -9,12 +10,12 @@ import re
 import xml.etree.ElementTree as ET
 
 
-def get_periodicity(cube_dimensions=None):
+def get_periodicity(cube_dimensions=None, time_periods="years"):
     # TODO: the dashboard uses `dashboard:is_periodic` as a means to create the unit timestamp
     # the ImageServer has these unit timestamps already
     # so we might just set it to False always
     # but we still need to figure out the `dashboard:time_density`
-    return False, "year"
+    return False, time_periods
     # for dimension in cube_dimensions.values():
     #     if dimension["type"] == "temporal":
     #         return (
@@ -52,16 +53,87 @@ def get_map_server_layers_wms(map_server_url):
     return layers
 
 
-def convert_map_server_to_collection_stac(server_url, collection_name):
+def get_mapserver_datetime_summary(collection_interval, time_interval_value, time_interval_units: str):
+    """
+    """
+
+    # Convert timestamps to datetime objects
+    start_date, end_date = collection_interval
+    # Parse the time_interval string
+
+    if time_interval_units == "esriTimeUnitsDays":
+        iso_duration = f"{time_interval_value}d"
+    elif time_interval_units == "esriTimeUnitsWeeks":
+        iso_duration = f"{time_interval_value}w"
+    elif time_interval_units == "esriTimeUnitsMonths":
+        iso_duration = f"{time_interval_value}m"
+    elif time_interval_units == "esriTimeUnitsYears":
+        iso_duration = f"{time_interval_value}y"
+    else:
+        raise ValueError("Unsupported time interval unit")
+    match = re.match(r'(\d+)([dwmy])', iso_duration)
+    if not match:
+        raise ValueError("Invalid time interval format. Use format like '7d', '3w', '2m', or '1y'.")
+
+    interval_number = int(match.group(1))
+    interval_type = match.group(2)
+    lookup = {
+        "d": "days",
+        "w": "weeks",
+        "m": "months",
+        "y": "years"
+    }
+    if not lookup.get(interval_type):
+        raise ValueError(
+            "Unsupported time interval type. Use 'd' for days, 'w' for weeks, 'm' for months, 'y' for years.")
+
+    time_periods = lookup[interval_type]
+    delta = relativedelta(**{time_periods: interval_number})
+
+    # Generate the list of datetime objects
+    datetime_list = []
+    current_date = start_date
+    while current_date < end_date:
+        formatted_date = current_date.strftime("%Y-%m-%dT00:00:00Z")
+        datetime_list.append(formatted_date)
+        current_date += delta
+    datetime_list.append(end_date.strftime("%Y-%m-%dT00:00:00Z"))
+    return time_periods, datetime_list
+
+
+def get_time_interval(service_url):
+    response = requests.get(service_url, params={"f": "json"})
+    response.raise_for_status()
+    metadata = response.json()
+
+    time_interval_value = metadata["timeInfo"]["timeInterval"]
+    time_interval_units = metadata["timeInfo"]["timeIntervalUnits"]
+
+    # Convert the time interval to ISO 8601 format
+    if time_interval_units == "esriTimeUnitsDays":
+        iso_duration = f"{time_interval_value}d"
+    elif time_interval_units == "esriTimeUnitsWeeks":
+        iso_duration = f"{time_interval_value}w"
+    elif time_interval_units == "esriTimeUnitsMonths":
+        iso_duration = f"{time_interval_value}m"
+    elif time_interval_units == "esriTimeUnitsYears":
+        iso_duration = f"{time_interval_value}y"
+    else:
+        raise ValueError("Unsupported time interval unit")
+
+    return iso_duration
+
+
+def convert_map_server_to_collection_stac(server_url, collection_id, collection_title):
     json_data = get_data(f"{server_url}?f=pjson")
     if json_data.get("error"):
         raise Exception(json_data)
-    collection_id = json_data.get("name", collection_name)
-    collection_title = json_data.get("name", collection_name)
     collection_description = json_data.get("serviceDescription", collection_title)
     spatial_ref = json_data["spatialReference"]["latestWkid"]
     xmin, ymin = json_data["fullExtent"]["xmin"], json_data["fullExtent"]["ymin"]
     xmax, ymax = json_data["fullExtent"]["xmax"], json_data["fullExtent"]["ymax"]
+    time_interval_value = json_data["timeInfo"]["defaultTimeInterval"]
+    time_interval_units = json_data["timeInfo"]["defaultTimeIntervalUnits"]
     collection_bbox = transform_projection(
         spatial_ref, xmin, ymin
     ) + transform_projection(spatial_ref, xmax, ymax)
@@ -71,12 +143,19 @@ def convert_map_server_to_collection_stac(server_url, collection_name):
         collection_interval = convert_to_datetime(json_data["timeInfo"]["timeExtent"])
     temporal_extent = TemporalExtent(intervals=collection_interval)
     collection_extent = Extent(spatial=spatial_extent, temporal=temporal_extent)
+    time_periods, collection_summaries_dates = get_mapserver_datetime_summary(collection_interval=collection_interval,
+                                                                              time_interval_value=time_interval_value,
+                                                                              time_interval_units=time_interval_units)
+
     collection = Collection(
         id=collection_id,
         title=collection_title,
         description=collection_description,
         extent=collection_extent,
         license="",
+        summaries=Summaries(
+            {"datetime": collection_summaries_dates}, maxcount=len(collection_summaries_dates) + 1
+        )
     )
     try:
         # User WMS
@@ -111,16 +190,13 @@ def convert_map_server_to_collection_stac(server_url, collection_name):
     (
         collection.extra_fields["dashboard:is_periodic"],
         collection.extra_fields["dashboard:time_density"],
-    ) = get_periodicity()
+    ) = get_periodicity(time_periods=time_periods)
 
     return collection
 
 
-def convert_image_server_to_collection_stac(server_url, collection_name):
+def convert_image_server_to_collection_stac(server_url, collection_id, collection_title):
     json_data = get_data(f"{server_url}?f=pjson")
-
-    collection_id = json_data.get("name", collection_name)
-    collection_title = json_data.get("name", collection_name)
     collection_description = json_data["serviceDescription"]
     datacube_variables, datacube_dimensions = get_cube_info(server_url)
 
@@ -196,9 +272,11 @@ def convert_to_collection_stac(server_url):
     pattern = r"services/(?P<collection_id>.*?)/(?P<server_type>(Image|Map))Server"
     re_search = re.search(pattern, server_url)
     collection_name = re_search.group("collection_id")
+    # STAC API doesn't support /
+    collection_id = collection_name.replace('/', '_').lower()
     server_type = re_search.group("server_type")
     collection = switch_function[server_type](
-        server_url=server_url, collection_name=collection_name
+        server_url=server_url, collection_id=collection_id, collection_title=collection_name
     )
     # add arcgis server url to the collection links
     server_link = Link(
@@ -212,7 +290,7 @@ def convert_to_collection_stac(server_url):
 
 
 def get_legend(
-    img_url, band_ids: List | None = None, variable_name=None, rendering_rule=None
+        img_url, band_ids: List | None = None, variable_name=None, rendering_rule=None
 ):
     band_ids_list = ",".join(band_ids) if band_ids else ""
     params = f"bandIds={band_ids_list}&variable={variable_name}&renderingRule={rendering_rule}&f=pjson"
