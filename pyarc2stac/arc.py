@@ -79,7 +79,6 @@ def get_mapserver_datetime_summary(collection_interval, time_interval_value, tim
     interval_type = match.group(2)
     lookup = {
         "d": "days",
-        "w": "weeks",
         "m": "months",
         "y": "years"
     }
