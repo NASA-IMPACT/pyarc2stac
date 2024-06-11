@@ -27,7 +27,8 @@ dependencies = [
     "pyproj",
     "pystac>=1.10.0",
     "python-dateutil>=2.7.0",
-    "requests>=2.28.0"
+    "requests>=2.28.0",
+    "pydantic_geojson>=0.1.1"
 ]
 dynamic = ["version"]
 
