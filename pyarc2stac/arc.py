@@ -8,6 +8,7 @@ from .utils import get_data, convert_to_datetime, transform_projection
 from typing import List
 import re
 import xml.etree.ElementTree as ET
+from pyproj import Transformer
 
 
 def get_periodicity(cube_dimensions=None, time_periods="year"):
@@ -267,6 +268,49 @@ def convert_image_server_to_collection_stac(server_url, collection_id, collectio
     ) = get_periodicity(datacube_dimensions)
     return collection
 
+def convert_feature_server_to_collection_stac(
+    server_url, collection_id, collection_title
+):
+    json_data = get_data(f"{server_url}?f=pjson")
+    collection_description = json_data.get("description") or collection_title
+    collection_bbox = [
+        json_data["fullExtent"]["xmin"],
+        json_data["fullExtent"]["ymin"],
+        json_data["fullExtent"]["xmax"],
+        json_data["fullExtent"]["ymax"],
+    ]
+
+    srid = json_data["fullExtent"]["spatialReference"]["latestWkid"]
+    transformer = Transformer.from_crs(srid, "EPSG:4326")
+
+    spatial_extent = SpatialExtent(
+        bboxes=list(transformer.transform_bounds(*collection_bbox))
+    )
+    temporal_extent = TemporalExtent(intervals=[[None, None]])
+    collection_extent = Extent(spatial=spatial_extent, temporal=temporal_extent)
+
+    layers = {i["id"]: i["name"] for i in json_data["layers"]}
+
+    collection = Collection(
+        id=collection_id,
+        title=collection_title,
+        description=collection_description,
+        extent=collection_extent,
+        license=json_data.get("license", "not-applicable"),
+    )
+
+    # Add links to the collection
+    link = Link(
+        target=server_url,
+        rel="featureserver",
+        media_type="image/json",
+        title="ArcGIS FeatureServer",
+    )
+    link.extra_fields["featureserver:layers"] = layers
+
+    collection.add_link(link)
+
+    return collection
 
 def convert_to_collection_stac(server_url):
     switch_function = {
@@ -275,7 +319,7 @@ def convert_to_collection_stac(server_url):
     }
 
     # use pystac to create a STAC collection
-    pattern = r"services/(?P<collection_id>.*?)/(?P<server_type>(Image|Map))Server"
+    pattern = r"services/(?P<collection_id>.*?)/(?P<server_type>(Image|Map|Feature))Server"
     re_search = re.search(pattern, server_url)
     collection_name = re_search.group("collection_id")
     # STAC API doesn't support /
