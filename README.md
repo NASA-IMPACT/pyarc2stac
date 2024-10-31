@@ -1,7 +1,7 @@
 # Pyarc2stac
 
-A reverse proxy that dataset metadata from ESRI data services (ImageServer, MapServer, FeatureServer, SomethingServer) as [STAC](https://stacspec.org/), 
-so they can become discoverable alongside other STAC-indexed resources.
+Extract metadata from ESRI data services (ImageServer, MapServer, FeatureServer, SomethingServer) and convert it to [STAC](https://stacspec.org/), 
+to make these services discoverable alongside other STAC-indexed resources.
 
 ## Supported ESRI services
 
