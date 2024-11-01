@@ -160,7 +160,7 @@ def convert_map_server_to_collection_stac(server_url, collection_id, collection_
         license=json_data.get('license', "not-applicable"),
         summaries=Summaries(
             {"datetime": collection_summaries_dates}, maxcount=len(collection_summaries_dates) + 1
-        )
+        ) if collection_summaries_dates else None
     )
     try:
         # User WMS
@@ -214,13 +214,18 @@ def convert_image_server_to_collection_stac(server_url, collection_id, collectio
         json_data["extent"]["ymax"],
     ]
     spatial_extent = SpatialExtent(bboxes=collection_bbox)
-    collection_interval = convert_to_datetime(json_data["timeInfo"]["timeExtent"])
-    temporal_extent = TemporalExtent(intervals=collection_interval)
+    collection_interval = [None, None]
+    
+    time_info = json_data.get("timeInfo")
+    if time_info:
+        collection_interval = convert_to_datetime(time_info["timeExtent"])
+    
+    temporal_extent = TemporalExtent(intervals=collection_interval)    
     collection_extent = Extent(spatial=spatial_extent, temporal=temporal_extent)
     date_time_summary = get_datetime_summaries(datacube_dimensions)
     collection_summaries = Summaries(
         {"datetime": date_time_summary}, maxcount=len(date_time_summary) + 1
-    )
+    ) if date_time_summary else None
 
     collection = Collection(
         id=collection_id,
@@ -316,6 +321,7 @@ def convert_to_collection_stac(server_url):
     switch_function = {
         "Image": convert_image_server_to_collection_stac,
         "Map": convert_map_server_to_collection_stac,
+        "Feature":convert_feature_server_to_collection_stac,
     }
 
     # use pystac to create a STAC collection
