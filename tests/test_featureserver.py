@@ -10,6 +10,7 @@ featuresever_urls = [
     "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/Active_Hurricanes_v1/FeatureServer",
 ]
 
+
 @pytest.mark.parametrize("url", featuresever_urls)
 def test_featureserver(url: str):
     collection = convert_to_collection_stac(server_url=url)

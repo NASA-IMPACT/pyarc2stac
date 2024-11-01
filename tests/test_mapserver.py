@@ -9,6 +9,7 @@ mapserver_urls = [
     "https://www.sciencebase.gov/arcgis/rest/services/bcb/reptile_richness_habitat30m/MapServer",
 ]
 
+
 @pytest.mark.parametrize("url", mapserver_urls)
 def test_mapserver(url: str):
     collection = convert_to_collection_stac(server_url=url)
