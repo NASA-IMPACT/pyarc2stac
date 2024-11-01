@@ -1,9 +1,8 @@
 import json
-import requests
-
 from collections import defaultdict
 
 import numpy as np
+import requests
 
 from .utils import convert_to_datetime
 
