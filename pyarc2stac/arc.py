@@ -1,14 +1,17 @@
 import datetime
-import requests
-import isodate
-from dateutil.relativedelta import relativedelta
-from pystac import SpatialExtent, TemporalExtent, Collection, Extent, Summaries, Link
-from pystac.extensions.datacube import DatacubeExtension, Variable, Dimension
-from .utils import get_data, get_xml, convert_to_datetime, transform_projection
-from typing import List
 import re
 import xml.etree.ElementTree as ET
+from typing import List
+
+import isodate
+import requests
+from dateutil.relativedelta import relativedelta
 from pyproj import Transformer
+from pystac import (Collection, Extent, Link, SpatialExtent, Summaries,
+                    TemporalExtent)
+from pystac.extensions.datacube import DatacubeExtension, Dimension, Variable
+
+from .utils import convert_to_datetime, get_data, get_xml, transform_projection
 
 
 def get_periodicity(cube_dimensions=None, time_periods="year"):

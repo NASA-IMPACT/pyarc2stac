@@ -16,15 +16,15 @@ imageserver_urls = [
     ),
     (
         "https://apps.fs.usda.gov/fsgisx01/rest/services/RDW_Wildfire/RMRS_WRC_HousingUnitDensity/ImageServer",
-        pytest.raises(RuntimeError),
+        pytest.raises(HTTPError),
     ),
     (
         "https://gis.nnvl.noaa.gov/arcgis/rest/services/REEF/REEF_current/ImageServer",
-        pytest.raises(RuntimeError),
+        pytest.raises(HTTPError),
     ),
     (
         "https://gis.nnvl.noaa.gov/arcgis/rest/services/CDHW/CDHW_yearly/ImageServer",
-        pytest.raises(RuntimeError),
+        pytest.raises(HTTPError),
     ),
 ]
 

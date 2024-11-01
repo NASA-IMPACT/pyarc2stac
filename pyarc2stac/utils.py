@@ -1,9 +1,8 @@
+import xml.etree.ElementTree as ET
 from datetime import datetime
 
 import requests
 from pyproj import Transformer
-
-import xml.etree.ElementTree as ET
 
 
 def get_data(url):
