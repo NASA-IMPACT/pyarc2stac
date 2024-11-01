@@ -25,23 +25,7 @@ def get_periodicity(cube_dimensions=None, time_periods="year"):
     #         )
 
 
-# def get_map_server_layers_rest(map_server_url):
-#     multi_dim = get_data(
-#         f"{map_server_url}/multiDimensionalInfo?returnDimensionValues=always&f=pjson"
-#     )
-#     return [layer_name["name"] for layer_name in multi_dim["layers"]]
-
-
 def get_layers_wms(get_capabilities_root: ET) -> List:
-    # service_url = map_server_url.replace("/rest", "")
-    # url = f"{service_url}/WMSServer?request=GetCapabilities&service=WMS"
-    # response = requests.get(url)
-    # response.raise_for_status()
-    # xml_content = response.content
-
-    # # Parse XML content
-    # root = ET.fromstring(xml_content)
-
     # Find all Layer elements
     layers = []
     for layer in get_capabilities_root.findall(".//{http://www.opengis.net/wms}Layer"):
