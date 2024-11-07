@@ -324,7 +324,7 @@ def convert_feature_server_to_collection_stac(
     link = Link(
         target=server_url,
         rel="featureserver",
-        media_type="image/json",
+        media_type="application/json",
         title="ArcGIS FeatureServer",
     )
     link.extra_fields["featureserver:layers"] = layers
