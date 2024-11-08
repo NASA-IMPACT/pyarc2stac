@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 from pyproj import Transformer
@@ -19,7 +19,7 @@ def get_xml(url) -> ET:
 
 def convert_to_datetime(times_extent):
     return [
-        datetime.utcfromtimestamp(time_extent / 1000.0) for time_extent in times_extent
+       datetime.fromtimestamp((time_extent/1000.0), timezone.utc) for time_extent in times_extent
     ]
 
 
