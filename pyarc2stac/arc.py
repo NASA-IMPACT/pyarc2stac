@@ -11,7 +11,7 @@ from pystac import (Collection, Extent, Link, SpatialExtent, Summaries,
                     TemporalExtent)
 from pystac.extensions.datacube import DatacubeExtension, Dimension, Variable
 
-from .utils import convert_to_datetime, get_data, get_xml, transform_projection
+from .utils import convert_to_datetime, get_data, get_xml, transform_projection, rfc3339_format
 
 
 def get_periodicity(cube_dimensions=None, time_periods="year"):
@@ -427,11 +427,11 @@ def get_cube_info(img_url):
                             )
                         ),
                         "extent": [
-                            f"{extent.isoformat()}Z"
+                            rfc3339_format(extent)
                             for extent in convert_to_datetime(dimension["extent"])
                         ],
                         "values": [
-                            f"{value.isoformat()}Z"
+                            rfc3339_format(value)
                             for value in convert_to_datetime(dimension["values"])
                         ],
                         "hasRegularIntervals": dimension["hasRegularIntervals"],
