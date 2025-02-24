@@ -14,18 +14,18 @@ from pystac.extensions.datacube import DatacubeExtension, Dimension, Variable
 from .utils import convert_to_datetime, get_data, get_xml, transform_projection, rfc3339_format
 
 
-def get_periodicity(cube_dimensions=None, time_periods="year"):
+def get_periodicity(time_interval = None) :
     # TODO: the dashboard uses `dashboard:is_periodic` as a means to create the unit timestamp
     # the ImageServer has these unit timestamps already
     # so we might just set it to False always
     # but we still need to figure out the `dashboard:time_density`
-    return False, time_periods
-    # for dimension in cube_dimensions.values():
-    #     if dimension["type"] == "temporal":
-    #         return (
-    #             dimension["hasRegularIntervals"],
-    #             dimension["intervalUnit"].lower()[:-1],
-    #         )
+    is_periodic = False
+
+    if time_interval is not None:
+        is_periodic = True
+
+    return is_periodic
+
 
 
 def get_layers_wms(get_capabilities_root: ET) -> List:
@@ -41,7 +41,7 @@ def get_layers_wms(get_capabilities_root: ET) -> List:
     return layers
 
 
-def get_mapserver_datetime_summary(
+def get_datetime_summary(
     collection_interval, time_interval_value, time_interval_units: str
 ):
     """ """
@@ -87,23 +87,17 @@ def get_mapserver_datetime_summary(
     return time_periods.rstrip("s"), datetime_list
 
 
-def get_time_interval(service_url):
-    response = requests.get(service_url, params={"f": "json"})
-    response.raise_for_status()
-    metadata = response.json()
-
-    time_interval_value = metadata["timeInfo"]["timeInterval"]
-    time_interval_units = metadata["timeInfo"]["timeIntervalUnits"]
+def get_time_interval(time_interval_value, time_interval_units: str):
 
     # Convert the time interval to ISO 8601 format
     if time_interval_units == "esriTimeUnitsDays":
-        iso_duration = f"{time_interval_value}d"
+        iso_duration = f"P{time_interval_value}D"
     elif time_interval_units == "esriTimeUnitsWeeks":
-        iso_duration = f"{time_interval_value}w"
+        iso_duration = f"P{time_interval_value}W"
     elif time_interval_units == "esriTimeUnitsMonths":
-        iso_duration = f"{time_interval_value}m"
+        iso_duration = f"P{time_interval_value}M"
     elif time_interval_units == "esriTimeUnitsYears":
-        iso_duration = f"{time_interval_value}y"
+        iso_duration = f"P{time_interval_value}Y"
     else:
         raise ValueError("Unsupported time interval unit")
 
@@ -131,18 +125,32 @@ def convert_map_server_to_collection_stac(server_url, collection_id, collection_
         spatial_ref, xmin, ymin
     ) + transform_projection(spatial_ref, xmax, ymax)
     spatial_extent = SpatialExtent(bboxes=collection_bbox)
+
     collection_interval = [None, None]
     collection_summaries_dates = []
-    time_periods = "year"
-    if json_data.get("timeInfo"):
+    is_periodic = None
+    time_density = "day"
+    time_interval = None
+
+    time_info = json_data.get("timeInfo")
+    if time_info:
         collection_interval = convert_to_datetime(json_data["timeInfo"]["timeExtent"])
-        time_interval_value = json_data["timeInfo"]["defaultTimeInterval"]
-        time_interval_units = json_data["timeInfo"]["defaultTimeIntervalUnits"]
-        time_periods, collection_summaries_dates = get_mapserver_datetime_summary(
-            collection_interval=collection_interval,
-            time_interval_value=time_interval_value,
-            time_interval_units=time_interval_units,
-        )
+        time_interval_value = time_info.get("defaultTimeInterval", None)
+        time_interval_units = time_info.get("defaultTimeIntervalUnits", None)
+
+        if time_interval_value and time_interval_units:
+            time_density, collection_summaries_dates = get_datetime_summary(
+                collection_interval=collection_interval,
+                time_interval_value=time_interval_value,
+                time_interval_units=time_interval_units,
+            )
+
+            time_interval = get_time_interval(
+                time_interval_value=time_interval_value,
+                time_interval_units=time_interval_units
+            )
+
+        is_periodic = get_periodicity(time_interval)
 
     temporal_extent = TemporalExtent(intervals=collection_interval)
     collection_extent = Extent(spatial=spatial_extent, temporal=temporal_extent)
@@ -190,10 +198,11 @@ def convert_map_server_to_collection_stac(server_url, collection_id, collection_
         collection.add_link(link)
 
     # Add custom extensions
-    (
-        collection.extra_fields["dashboard:is_periodic"],
-        collection.extra_fields["dashboard:time_density"],
-    ) = get_periodicity(time_periods=time_periods)
+    collection.extra_fields["dashboard:is_periodic"] = is_periodic
+    collection.extra_fields["dashboard:time_density"] = time_density
+    
+    if time_interval:
+        collection.extra_fields["dashboard:time_interval"] = time_interval
 
     if not collection_summaries_dates:
         collection.extra_fields["dashboard:is_timeless"] = True
@@ -213,7 +222,7 @@ def convert_image_server_to_collection_stac(
 
     json_data = get_data(f"{server_url}?f=pjson")
     collection_description = json_data.get("description") or collection_title
-    datacube_variables, datacube_dimensions = get_cube_info(server_url)
+    collection_hasMultiDimensions = json_data.get("hasMultidimensions")
 
     collection_bbox = [
         json_data["extent"]["xmin"],
@@ -222,20 +231,36 @@ def convert_image_server_to_collection_stac(
         json_data["extent"]["ymax"],
     ]
     spatial_extent = SpatialExtent(bboxes=collection_bbox)
-    collection_interval = [None, None]
 
+    collection_interval = [None, None]
+    collection_summaries_dates = []
+    time_density = "day"
+    is_periodic = None
+    time_interval = None
+
+    # Datetime Summaries
     time_info = json_data.get("timeInfo")
     if time_info:
         collection_interval = convert_to_datetime(time_info["timeExtent"])
+        time_interval_value = time_info.get("defaultTimeInterval", None)
+        time_interval_units = time_info.get("defaultTimeIntervalUnits", None)
+
+        if time_interval_value and time_interval_units:
+            time_density, collection_summaries_dates = get_datetime_summary(
+                collection_interval=collection_interval,
+                time_interval_value=time_interval_value,
+                time_interval_units=time_interval_units,
+            )
+
+            time_interval = get_time_interval(
+                time_interval_value=time_interval_value,
+                time_interval_units=time_interval_units
+            )
+        
+        is_periodic = get_periodicity(time_interval)
 
     temporal_extent = TemporalExtent(intervals=collection_interval)
     collection_extent = Extent(spatial=spatial_extent, temporal=temporal_extent)
-    date_time_summary = get_datetime_summaries(datacube_dimensions)
-    collection_summaries = (
-        Summaries({"datetime": date_time_summary}, maxcount=len(date_time_summary) + 1)
-        if date_time_summary
-        else None
-    )
 
     collection = Collection(
         id=collection_id,
@@ -243,7 +268,6 @@ def convert_image_server_to_collection_stac(
         description=collection_description,
         extent=collection_extent,
         license=json_data.get("license", "not-applicable"),
-        summaries=collection_summaries,
         stac_extensions=[
             "https://stac-extensions.github.io/web-map-links/v1.2.0/schema.json"
         ],
@@ -274,18 +298,39 @@ def convert_image_server_to_collection_stac(
         if "wms:styles" in link_data:
             link.extra_fields["wms:styles"] = link_data["wms:styles"]
         collection.add_link(link)
-    # Add Datacube extension to the collection
-    datacube_ext = DatacubeExtension.ext(collection, add_if_missing=True)
-    # Set eDimensions and Variables to Datacube extension
-    datacube_ext.variables, datacube_ext.dimensions = (
-        datacube_variables,
-        datacube_dimensions,
+ 
+    if collection_hasMultiDimensions:
+        datacube_variables, datacube_dimensions = get_cube_info(server_url)
+        
+        # Add Datacube extension to the collection
+        datacube_ext = DatacubeExtension.ext(collection, add_if_missing=True)
+        # Set Dimensions and Variables to Datacube extension
+        datacube_ext.variables, datacube_ext.dimensions = (
+            datacube_variables,
+            datacube_dimensions,
+        )
+        
+        if not collection_summaries_dates:
+            collection_summaries_dates, time_interval, time_density = get_imageserver_datetime_summaries(datacube_dimensions)
+            time_density = time_density.lower().rstrip('s')
+            is_periodic = get_periodicity(time_interval)
+
+    collection_summaries = (
+        Summaries(
+            {"datetime": collection_summaries_dates}, 
+            maxcount=len(collection_summaries_dates) + 1
+        )
+        if collection_summaries_dates
+        else None
     )
-    # Add custom extensions
-    (
-        collection.extra_fields["dashboard:is_periodic"],
-        collection.extra_fields["dashboard:time_density"],
-    ) = get_periodicity(datacube_dimensions)
+
+    collection.extra_fields["dashboard:is_periodic"] = is_periodic
+    collection.extra_fields["dashboard:time_density"] = time_density
+    if collection_summaries:
+        collection.summaries.update(collection_summaries)
+    if time_interval:
+        collection.extra_fields["dashboard:time_interval"] = time_interval
+
     return collection
 
 
@@ -374,11 +419,12 @@ def get_legend(
     return get_data(f"{img_url}/legend?{params}")
 
 
-def get_datetime_summaries(cube_dimensions):
+def get_imageserver_datetime_summaries(cube_dimensions):
     for dim in cube_dimensions.values():
         dim_dict = dim.to_dict()
+        print('imageTimeServer_summaries=',dim_dict)
         if dim_dict["type"] == "temporal":
-            return dim_dict["values"]
+            return dim_dict["values"], dim_dict["step"], dim_dict["intervalUnit"]
 
 
 def get_cube_mapserver_info(mapserver_url, layer_id):
