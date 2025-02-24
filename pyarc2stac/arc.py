@@ -422,7 +422,6 @@ def get_legend(
 def get_imageserver_datetime_summaries(cube_dimensions):
     for dim in cube_dimensions.values():
         dim_dict = dim.to_dict()
-        print('imageTimeServer_summaries=',dim_dict)
         if dim_dict["type"] == "temporal":
             return dim_dict["values"], dim_dict["step"], dim_dict["intervalUnit"]
 
