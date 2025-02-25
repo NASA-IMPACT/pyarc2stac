@@ -328,7 +328,7 @@ def convert_image_server_to_collection_stac(
     collection.extra_fields["dashboard:is_periodic"] = is_periodic
     collection.extra_fields["dashboard:time_density"] = time_density
     if collection_summaries:
-        collection.summaries.update(collection_summaries)
+        collection.summaries = collection_summaries
     if time_interval:
         collection.extra_fields["dashboard:time_interval"] = time_interval
 
