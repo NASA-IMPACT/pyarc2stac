@@ -10,6 +10,7 @@ from pyproj import Transformer
 from pystac import (Collection, Extent, Link, SpatialExtent, Summaries,
                     TemporalExtent)
 from pystac.extensions.datacube import DatacubeExtension, Dimension, Variable
+from pystac.extensions.render import Render, RenderExtension
 from pystac.utils import datetime_to_str
 
 from .utils import convert_to_datetime, get_data, get_xml, transform_projection
@@ -207,6 +208,19 @@ def convert_map_server_to_collection_stac(server_url, collection_id, collection_
 
     if not collection_summaries_dates:
         collection.extra_fields["dashboard:is_timeless"] = True
+
+    collection.ext.add("render")
+    RenderExtension.ext(collection).apply(
+        {
+            layer["name"].lower(): Render(
+                {
+                    "layers": layer["id"]
+                }
+            )  
+            for layer in json_data["layers"]  
+        }
+    )
+
     return collection
 
 
