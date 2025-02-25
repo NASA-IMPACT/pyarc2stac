@@ -10,8 +10,9 @@ from pyproj import Transformer
 from pystac import (Collection, Extent, Link, SpatialExtent, Summaries,
                     TemporalExtent)
 from pystac.extensions.datacube import DatacubeExtension, Dimension, Variable
+from pystac.utils import datetime_to_str
 
-from .utils import convert_to_datetime, get_data, get_xml, transform_projection, rfc3339_format
+from .utils import convert_to_datetime, get_data, get_xml, transform_projection
 
 
 def get_periodicity(time_interval = None) :
@@ -472,11 +473,11 @@ def get_cube_info(img_url):
                             )
                         ),
                         "extent": [
-                            rfc3339_format(extent)
+                            datetime_to_str(extent)
                             for extent in convert_to_datetime(dimension["extent"])
                         ],
                         "values": [
-                            rfc3339_format(value)
+                            datetime_to_str(value)
                             for value in convert_to_datetime(dimension["values"])
                         ],
                         "hasRegularIntervals": dimension["hasRegularIntervals"],
