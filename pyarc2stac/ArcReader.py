@@ -209,7 +209,8 @@ class ArcReader:
                     link.extra_fields["wms:styles"] = ["default"]
                     collection.add_link(link)
 
-            case ServerType.Image.name:
+                # This will only be true for ImageServer,
+                # so we can safely skip the imageserver check
                 if json_data.get("hasMultidimensions"):
                     datacube_variables, datacube_dimensions = \
                         self.get_cube_info()
