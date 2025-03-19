@@ -200,7 +200,7 @@ class ArcReader:
                     )
 
                     link = Link(
-                        target=self.wms_url,
+                        target=f"{self.server_url.replace('/rest', '')}WMSServer",
                         rel="wms",
                         media_type="image/png",
                         title="Visualized through a WMS",
