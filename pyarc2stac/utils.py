@@ -14,6 +14,12 @@ def get_data(url):
 def get_xml(url) -> ET:
     r = requests.get(url)
     r.raise_for_status()
+    if b"<ServiceExceptionReport" in r.content:
+        error_response = ET.fromstring(r.content)
+        service_exception = error_response.find("ServiceException")
+        raise Exception(f"""
+            ServiceException detected in response content: \n code: {service_exception.attrib.get("code")} \n message: {service_exception.text}
+        """)
     return ET.fromstring(r.content)
 
 
