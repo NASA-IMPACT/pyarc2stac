@@ -8,7 +8,7 @@ from pystac.extensions.datacube import DatacubeExtension, Dimension, Variable
 from pystac.extensions.render import Render, RenderExtension
 from pystac.utils import datetime_to_str
 
-from .utils import convert_to_datetime, get_data, get_xml, transform_projection
+from .utils import convert_to_datetime, get_data, get_xml, transform_projection, strip_html
 from enum import Enum
 
 from .WMSReader import WMSReader
@@ -141,8 +141,8 @@ class ArcReader:
         if json_data.get("error"):
             raise Exception(json_data)
 
-        collection_description = json_data.get("description") \
-            or self.collection_id
+        collection_description = strip_html(json_data.get("description") \
+            or self.collection_id)
 
         spatial_ref = json_data["spatialReference"]["latestWkid"]
         xmin, ymin = (
