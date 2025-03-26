@@ -10,8 +10,10 @@ from pystac.utils import datetime_to_str
 
 from .utils import convert_to_datetime, get_data, get_xml, transform_projection, strip_html
 from enum import Enum
+import json
 
 from .WMSReader import WMSReader
+
 
 
 class ServerType(Enum):
@@ -255,3 +257,19 @@ class ArcReader:
             collection.extra_fields["dashboard:time_interval"] = time_interval
 
         return collection
+
+    def save_collection_to_json(self, filename=None):
+        """
+        Save the generated STAC Collection to a JSON file.
+    
+        Args:
+            filename (str): Optional. If not provided, uses the collection ID as filename.
+        """
+        collection = self.generate_stac()
+        output_filename = filename or f"{collection.id}.json"
+        
+        with open(output_filename, "w") as file:
+            json.dump(collection.to_dict(), file, indent=4)
+        
+        print(f"✅ Wrote collection to {output_filename}")
+
