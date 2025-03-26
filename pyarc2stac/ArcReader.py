@@ -184,6 +184,16 @@ class ArcReader:
             extent=collection_extent,
             license=json_data.get("license", "not-applicable"),
         )
+        # Add item_assets block to describe expected assets in items (this is a required field in VEDA STAC ingest)
+        collection.extra_fields["item_assets"] = {
+            "cog_default": {
+                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+                "roles": ["data", "layer"],
+                "title": "Default COG Layer",
+                "description": "Cloud optimized default layer to display on map"
+            }
+        }
+
         match self.type:
             case ServerType.Map.name | ServerType.Image.name:
                 if root := self.wms_root():
@@ -209,7 +219,6 @@ class ArcReader:
                     )
                     link.extra_fields["wms:layers"] = list(wms_layers.values())
                     link.extra_fields["wms:styles"] = ["default"]
-                    collection.add_link(link)
 
                 # This will only be true for ImageServer,
                 # so we can safely skip the imageserver check
