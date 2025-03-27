@@ -8,10 +8,12 @@ from pystac.extensions.datacube import DatacubeExtension, Dimension, Variable
 from pystac.extensions.render import Render, RenderExtension
 from pystac.utils import datetime_to_str
 
-from .utils import convert_to_datetime, get_data, get_xml, transform_projection
+from .utils import convert_to_datetime, get_data, get_xml, transform_projection, strip_html
 from enum import Enum
+import json
 
 from .WMSReader import WMSReader
+
 
 
 class ServerType(Enum):
@@ -141,8 +143,8 @@ class ArcReader:
         if json_data.get("error"):
             raise Exception(json_data)
 
-        collection_description = json_data.get("description") \
-            or self.collection_id
+        collection_description = strip_html(json_data.get("description") \
+            or self.collection_id)
 
         spatial_ref = json_data["spatialReference"]["latestWkid"]
         xmin, ymin = (
@@ -182,6 +184,9 @@ class ArcReader:
             extent=collection_extent,
             license=json_data.get("license", "not-applicable"),
         )
+        # Add item_assets block to describe expected assets in items (this is a required field in VEDA STAC ingest)
+        collection.extra_fields["item_assets"] = {}
+
         match self.type:
             case ServerType.Map.name | ServerType.Image.name:
                 if root := self.wms_root():
@@ -207,7 +212,6 @@ class ArcReader:
                     )
                     link.extra_fields["wms:layers"] = list(wms_layers.values())
                     link.extra_fields["wms:styles"] = ["default"]
-                    collection.add_link(link)
 
                 # This will only be true for ImageServer,
                 # so we can safely skip the imageserver check
@@ -255,3 +259,19 @@ class ArcReader:
             collection.extra_fields["dashboard:time_interval"] = time_interval
 
         return collection
+
+    def save_collection_to_json(self, filename=None):
+        """
+        Save the generated STAC Collection to a JSON file.
+    
+        Args:
+            filename (str): Optional. If not provided, uses the collection ID as filename.
+        """
+        collection = self.generate_stac()
+        output_filename = filename or f"{collection.id}.json"
+        
+        with open(output_filename, "w") as file:
+            json.dump(collection.to_dict(), file, indent=4)
+        
+        print(f"✅ Wrote collection to {output_filename}")
+

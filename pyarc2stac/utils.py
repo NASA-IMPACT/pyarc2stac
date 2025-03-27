@@ -3,6 +3,13 @@ from datetime import datetime, timezone
 
 import requests
 from pyproj import Transformer
+from bs4 import BeautifulSoup
+
+
+def strip_html(html_text):
+    #Clean html text for description.
+    soup = BeautifulSoup(html_text, "html.parser")
+    return soup.get_text(separator=" ", strip=True)
 
 
 def get_data(url):
