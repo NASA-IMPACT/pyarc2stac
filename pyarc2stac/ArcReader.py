@@ -185,14 +185,7 @@ class ArcReader:
             license=json_data.get("license", "not-applicable"),
         )
         # Add item_assets block to describe expected assets in items (this is a required field in VEDA STAC ingest)
-        collection.extra_fields["item_assets"] = {
-            "cog_default": {
-                "type": "image/tiff; application=geotiff; profile=cloud-optimized",
-                "roles": ["data", "layer"],
-                "title": "Default COG Layer",
-                "description": "Cloud optimized default layer to display on map"
-            }
-        }
+        collection.extra_fields["item_assets"] = {}
 
         match self.type:
             case ServerType.Map.name | ServerType.Image.name:
