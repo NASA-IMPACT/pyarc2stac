@@ -13,7 +13,7 @@ from enum import Enum
 import json
 
 from .WMSReader import WMSReader
-
+from requests.exceptions import HTTPError
 
 
 class ServerType(Enum):
@@ -28,6 +28,22 @@ class ArcReader:
         self.type, self.collection_id = self._extract_type_and_id()
 
     def _extract_type_and_id(self):
+        """
+        Extract the ArcGIS server type and a STAC-compatible collection ID from the server URL.
+    
+        Returns:
+            tuple:
+                - type (str): The ArcGIS server type, one of 'Image', 'Map', or 'Feature'.
+                - collection_id (str): A sanitized identifier for the STAC Collection, 
+                  derived from the ArcGIS service path (slashes replaced by underscores, lowercased).
+    
+        Example:
+            Input URL:
+                'https://example.com/arcgis/rest/services/My/Service/ImageServer'
+            Output:
+                ('ImageServer', 'my_service')
+        """
+        
         pattern = (
             r"services/(?P<collection_id>.*?)/(?P<server_type>(Image|Map|Feature))Server"
         )
@@ -69,12 +85,10 @@ class ArcReader:
 
     @staticmethod
     def get_periodicity(time_info):
-        if time_info:
+        if "defaultTimeIntervalUnits" in time_info and "defaultTimeInterval" in time_info:
             is_periodic, unit, interval = (
                 True,
-                ArcReader.convert_esri_time_unit(
-                    time_info["defaultTimeIntervalUnits"]
-                ),
+                ArcReader.convert_esri_time_unit(time_info["defaultTimeIntervalUnits"]),
                 ArcReader.convert_to_iso_interval(
                     time_info["defaultTimeInterval"],
                     time_info["defaultTimeIntervalUnits"]
@@ -83,7 +97,6 @@ class ArcReader:
             return is_periodic, unit, interval
         else:
             return False, None, None
-
     def get_cube_info(self):
         multi_dim = get_data(
             f"{self.server_url}/multiDimensionalInfo?returnDimensionValues=always&f=pjson"
@@ -189,21 +202,14 @@ class ArcReader:
 
         match self.type:
             case ServerType.Map.name | ServerType.Image.name:
-                if root := self.wms_root():
+                root = self.wms_root()
+                if root is None:
+                    raise HTTPError("WMS root could not be retrieved.")
+                elif root is not None:
                     wms_reader = WMSReader(root)
                     wms_layers = wms_reader.get_layers()
-                    collection.ext.add("render")
-                    RenderExtension.ext(collection).apply(
-                        {
-                            layer_id.lower(): Render(
-                                {
-                                    "layers": layer_name
-                                }
-                            )
-                            for layer_id, layer_name in wms_layers.items()
-                        }
-                    )
-
+                
+                    # Store WMS metadata in a Link (valid on Collection)
                     link = Link(
                         target=f"{self.server_url.replace('/rest', '')}WMSServer",
                         rel="wms",
@@ -212,6 +218,8 @@ class ArcReader:
                     )
                     link.extra_fields["wms:layers"] = list(wms_layers.values())
                     link.extra_fields["wms:styles"] = ["default"]
+                    collection.add_link(link)
+
 
                 # This will only be true for ImageServer,
                 # so we can safely skip the imageserver check
@@ -274,4 +282,6 @@ class ArcReader:
             json.dump(collection.to_dict(), file, indent=4)
         
         print(f"✅ Wrote collection to {output_filename}")
+
+    
 

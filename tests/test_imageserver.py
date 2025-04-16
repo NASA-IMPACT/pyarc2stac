@@ -1,4 +1,4 @@
-from pyarc2stac import convert_to_collection_stac
+from pyarc2stac.ArcReader import ArcReader
 import pytest
 from requests.exceptions import HTTPError
 
@@ -25,10 +25,12 @@ imageserver_urls_fails = [
 @pytest.mark.parametrize("url, expectation", imageserver_urls_fails)
 def test_imageserver_fails(url: str, expectation):
     with expectation as e:
-        assert convert_to_collection_stac(server_url=url) == e
+        arc = ArcReader(server_url=url)
+        assert arc.generate_stac() == e
 
 
 @pytest.mark.parametrize("url", imageserver_urls_succeed)
 def test_imageserver_succeeds(url: str):
-    collection = convert_to_collection_stac(server_url=url)
+    arc = ArcReader(server_url=url)
+    collection = arc.generate_stac()
     collection.validate()

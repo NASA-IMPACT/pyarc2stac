@@ -1,4 +1,4 @@
-from pyarc2stac import convert_to_collection_stac
+from pyarc2stac.ArcReader import ArcReader
 import pytest
 
 featuresever_urls = [
@@ -13,5 +13,6 @@ featuresever_urls = [
 
 @pytest.mark.parametrize("url", featuresever_urls)
 def test_featureserver(url: str):
-    collection = convert_to_collection_stac(server_url=url)
+    arc = ArcReader(server_url=url)
+    collection = arc.generate_stac()
     collection.validate()
