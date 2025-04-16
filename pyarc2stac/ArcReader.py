@@ -41,7 +41,7 @@ class ArcReader:
             Input URL:
                 'https://example.com/arcgis/rest/services/My/Service/ImageServer'
             Output:
-                ('ImageServer', 'my_service')
+                ('ImageServer', 'Service')
         """
         
         pattern = (
