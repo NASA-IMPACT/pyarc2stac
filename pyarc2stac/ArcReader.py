@@ -211,7 +211,7 @@ class ArcReader:
                 
                     # Store WMS metadata in a Link (valid on Collection)
                     link = Link(
-                        target=f"{self.server_url.replace('/rest', '')}WMSServer",
+                        target=f"{self.server_url.replace('/rest', '')}/WMSServer",
                         rel="wms",
                         media_type="image/png",
                         title="Visualized through a WMS",
