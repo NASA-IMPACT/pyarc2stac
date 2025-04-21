@@ -202,16 +202,13 @@ class ArcReader:
 
         match self.type:
             case ServerType.Map.name | ServerType.Image.name:
-                root = self.wms_root()
-                if root is None:
-                    raise HTTPError("WMS root could not be retrieved.")
-                elif root is not None:
+                if root := self.wms_root():
                     wms_reader = WMSReader(root)
                     wms_layers = wms_reader.get_layers()
                 
                     # Store WMS metadata in a Link (valid on Collection)
                     link = Link(
-                        target=f"{self.server_url.replace('/rest', '')}/WMSServer",
+                        target=f"{self.server_url.replace('/rest', '').strip("/")}/WMSServer",
                         rel="wms",
                         media_type="image/png",
                         title="Visualized through a WMS",
