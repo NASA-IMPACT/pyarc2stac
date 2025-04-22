@@ -205,7 +205,19 @@ class ArcReader:
                 if root := self.wms_root():
                     wms_reader = WMSReader(root)
                     wms_layers = wms_reader.get_layers()
-                
+                    collection.ext.add("render")
+                    
+                    RenderExtension.ext(collection).apply(
+                        {
+                            layer_id.lower(): Render(
+                                {
+                                    "layers": layer_name
+                                }
+                            )
+                            for layer_id, layer_name in wms_layers.items()
+                        }
+                    )
+
                     # Store WMS metadata in a Link (valid on Collection)
                     link = Link(
                         target=f"{self.server_url.replace('/rest', '').strip("/")}/WMSServer",
