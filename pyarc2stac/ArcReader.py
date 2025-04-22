@@ -13,7 +13,6 @@ from enum import Enum
 import json
 
 from .WMSReader import WMSReader
-from requests.exceptions import HTTPError
 
 
 class ServerType(Enum):
@@ -206,7 +205,7 @@ class ArcReader:
                     wms_reader = WMSReader(root)
                     wms_layers = wms_reader.get_layers()
                     collection.ext.add("render")
-                    
+
                     RenderExtension.ext(collection).apply(
                         {
                             layer_id.lower(): Render(
