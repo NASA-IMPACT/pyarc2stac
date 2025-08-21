@@ -100,18 +100,29 @@ class ArcReader:
         multi_dim = get_data(
             f"{self.server_url}/multiDimensionalInfo?returnDimensionValues=always&f=pjson"
         )
-        variables = multi_dim.get("multidimensionalInfo", {}).get("variables", [])
+        multi_dim_variables = multi_dim.get("multidimensionalInfo", {}).get("variables", [])
+        
+        histograms = get_data(
+            f"{self.server_url}/histograms?variable=&renderingRule=&f=pjson"
+        )
+
+        statistics = get_data(
+            f"{self.server_url}/statistics?variable=&renderingRule=&f=pjson"
+        )
+
         cube_variables = {}
         cube_dimensions = {}
 
-        for index, variable in enumerate(variables):
-            cube_variables[variable["name"]] = Variable(
+        for index, variable in enumerate(multi_dim_variables):
+            var_name = variable["name"]
+            
+            cube_variables[var_name] = Variable(
                 {
                     "type": "data",
                     "attrs": variable.get("attributes", {}),
-                    "statistics": variable["statistics"],
-                    "histograms": variable["histograms"],
-                    "unit": variable["unit"],
+                    "statistics": statistics.get('statistics', variable.get("statistics", {})),
+                    "histograms": histograms.get('histograms', variable.get("histograms", {})),
+                    "unit": variable.get("unit", ""),
                     "dimensions": [
                         dimension["name"] for dimension in variable["dimensions"]
                     ],
