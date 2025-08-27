@@ -96,22 +96,27 @@ class ArcReader:
             return is_periodic, unit, interval
         else:
             return False, None, None
+
     def get_cube_info(self):
+        #This function is called if `hasMultidimensions` == True
         multi_dim = get_data(
             f"{self.server_url}/multiDimensionalInfo?returnDimensionValues=always&f=pjson"
         )
         variables = multi_dim.get("multidimensionalInfo", {}).get("variables", [])
+
         cube_variables = {}
         cube_dimensions = {}
 
         for index, variable in enumerate(variables):
-            cube_variables[variable["name"]] = Variable(
+            var_name = variable["name"]
+            
+            cube_variables[var_name] = Variable(
                 {
                     "type": "data",
                     "attrs": variable.get("attributes", {}),
-                    "statistics": variable["statistics"],
-                    "histograms": variable["histograms"],
-                    "unit": variable["unit"],
+                    "statistics": variable.get('statistics', {}),
+                    "histograms": variable.get('histograms', {}),
+                    "unit": variable.get("unit", ""),
                     "dimensions": [
                         dimension["name"] for dimension in variable["dimensions"]
                     ],
